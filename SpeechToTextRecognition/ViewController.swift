@@ -14,6 +14,7 @@ import SwiftyWave
 
 class ViewController: UIViewController {
     
+    /*enum to define the status of speech recognizer*/
     enum SpeechStatus {
         case ready
         case recognizing
@@ -80,11 +81,12 @@ class ViewController: UIViewController {
         micButton.layer.shadowRadius = 10.0
         micButton.layer.masksToBounds = false
         
+        /*Change the Placeholder color of the textfield*/
         keyWordTextField.attributedPlaceholder = NSAttributedString(string: "Type your keywords here", attributes: [NSAttributedString.Key.foregroundColor: UIColor.white])
         
         requestAndCheckSpeechAuthorization()
         
-        //Looks for single or multiple taps.
+        /*Add a Tap Gesture to dismiss the keyboard when the user touches on any part of the view*/
         let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(UIInputViewController.dismissKeyboard))
         
         //Uncomment the line below if you want the tap not not interfere and cancel other interactions.
@@ -99,33 +101,7 @@ class ViewController: UIViewController {
         view.endEditing(true)
     }
     
-    func requestAndCheckSpeechAuthorization() {
-        
-        switch SFSpeechRecognizer.authorizationStatus() {
-        case .notDetermined:
-            self.askSpeechPermission()
-        case .authorized:
-            self.status = .ready
-        case .denied, .restricted:
-            self.status = .unavailable
-        @unknown default:
-            fatalError()
-        }
-    }
-    
-    /// Ask permission to the user to access their speech data.
-    func askSpeechPermission() {
-        SFSpeechRecognizer.requestAuthorization { status in
-            OperationQueue.main.addOperation {
-                switch status {
-                case .authorized:
-                    self.status = .ready
-                default:
-                    self.status = .unavailable
-                }
-            }
-        }
-    }
+    //MARK:- IBAction Methods -
     
     @IBAction func onTapOfMicButton(_ sender: UIButton) {
         
@@ -142,6 +118,39 @@ class ViewController: UIViewController {
         }
     }
     
+    //MARK: - Speech Recognition Helper Methods -
+    
+    /*Authorize the user to accept the Mike Permission*/
+    func requestAndCheckSpeechAuthorization() {
+        
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .notDetermined:
+            self.askSpeechPermission()
+        case .authorized:
+            self.status = .ready
+        case .denied, .restricted:
+            self.status = .unavailable
+        @unknown default:
+            fatalError()
+        }
+    }
+    
+    /* Ask permission to the user to access their speech data*/
+    func askSpeechPermission() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            
+            OperationQueue.main.addOperation {
+                switch status {
+                case .authorized:
+                    self.status = .ready
+                default:
+                    self.status = .unavailable
+                }
+            }
+        }
+    }
+    
+    /*Method to Record and Recognize Speech and transcript into text*/
     func recordAndRecognizeSpeech(){
         
         waveView.isHidden = false
@@ -159,6 +168,7 @@ class ViewController: UIViewController {
                             self.request.append(buffer)
         }
         
+        /*Prepare the Audio Engine to hear the voice*/
         self.audioEngine.prepare()
         
         do{
@@ -191,6 +201,7 @@ class ViewController: UIViewController {
         })
     }
     
+    /*Cancel the Recording to make the engine ready for a new Node*/
     func cancelRecording() {
         
         waveView.isHidden = true
@@ -205,6 +216,7 @@ class ViewController: UIViewController {
         print("The final string after cancelling is \(fullSpeechString)")
     }
     
+    /*Reset all the relevant properties to initiage a new engine*/
     func resetTextForNewSpeech(){
         
         status = .recognizing
@@ -234,21 +246,16 @@ class ViewController: UIViewController {
         
         var searchString = ""
         
+        /*Iterate inside the array to find the strings*/
         for string in arrayWithAllTheKeywords{
+            
+            /*Search for the entered keyword if it is present in the Full Speech*/
             searchFullSpeech(with: string)
 
             if searchString.isEmpty {
-                
                 searchString = "\(string)"
-                
             } else {
-                
-                //                if !searchString.contains(string){
-                /*Along the way of saving the keywords, try finding if the saved keyword is present in full speech search*/
-                //                    searchFullSpeech(with: string)
-                
                 searchString = "\(string),\(searchString)"
-                //                }
             }
         }
         
@@ -256,6 +263,7 @@ class ViewController: UIViewController {
         defineKeywordsTextView.text = searchString
     }
     
+    /*Method to search for keyword in Full Speech*/
     func searchFullSpeech(with keywordString:String){
         
         if fullSpeechString.lowercased().contains(keywordString) {
@@ -271,6 +279,8 @@ class ViewController: UIViewController {
         }
     }
 }
+
+//MARK:- Start of Extensions -
 
 // MARK: - TextField Delegate Methods -
 
@@ -291,38 +301,37 @@ extension ViewController:UITextFieldDelegate{
             /*Check if the keyword typed is Empty. Add it to the Array only a keyword is typed*/
             if !keyWordString.isEmpty{
                 
-                let strArray = keyWordString.components(separatedBy: ",")
+                let stringComponents = keyWordString.components(separatedBy: ",")
                 
-                for trimmedKeyword in strArray {
+                /*Iterate inside the String Components*/
+                for trimmedKeyword in stringComponents {
                     
                     let trimmedKeyword = trimmedKeyword.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                     
+                    /*Continue the execution if the keyword entered is empty*/
                     if trimmedKeyword.isEmpty {
                         continue;
                     }
                     /*Add the First keyword directly to the Array*/
                     if arrayWithAllTheKeywords.isEmpty{
-                        
                         arrayWithAllTheKeywords.append(trimmedKeyword)
                     }
                     else{
                         /*Loop between the keywords and avoid adding the keyword if it is already added to the array*/
-                        
                         if !arrayWithAllTheKeywords.contains(trimmedKeyword){
-                            
-                            
-                            
                             arrayWithAllTheKeywords.append(trimmedKeyword)
                         }
                     }
                 }
             }
         }
-        
+                
         print(arrayWithAllTheKeywords)
         
+        /*Display the entered keywords in the textview*/
         displayKeywords()
         
+        /*Reset the textfield string*/
         keyWordTextField.text = ""
     }
 }
@@ -332,9 +341,11 @@ extension ViewController:UITextFieldDelegate{
 extension ViewController:SFSpeechRecognizerDelegate{
     
     func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
-        
+        print(speechRecognizer.isAvailable)
     }
 }
+
+//MARK:- String Extensions -
 
 extension String{
     
@@ -347,4 +358,3 @@ extension String{
         }
     }
 }
-
