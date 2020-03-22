@@ -1,0 +1,11 @@
+framework module SwiftyWave {
+  umbrella header "SwiftyWave.h"
+
+  export *
+  module * { export * }
+}
+
+module SwiftyWave.Swift {
+    header "SwiftyWave-Swift.h"
+    requires objc
+}
